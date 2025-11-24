@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charge Lulinha Pistolinga</title>
+    
+    <!-- React e ReactDOM via CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel para traduzir JSX no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .rotate-neg-2 { transform: rotate(-2deg); }
+    </style>
+</head>
+<body class="bg-yellow-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- CONFIGURAÇÃO ---
+        // COLOQUE AQUI A URL DO SEU CLOUDFLARE WORKER
+        const WORKER_URL = "https://nameless-frost-1d09.lucasabreucotefis.workers.dev"; 
+        const AFONSO_FILE_PATH = "./afonso.png"; // Nome do arquivo na pasta do Git
+
+        const { useState, useEffect, useRef } = React;
+
+        // --- ÍCONES SVG (Definidos manualmente para evitar erros de CDN React) ---
+        const Camera = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        );
+        const Send = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        );
+        const Upload = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        );
+        const ImageIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        );
+        const Loader2 = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        );
+        const Download = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        );
+        const AlertCircle = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+        );
+        const RefreshCw = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        );
+        const CheckCircle2 = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        );
+
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('setup'); 
+            const [afonsoImage, setAfonsoImage] = useState(null);
+            const [newsText, setNewsText] = useState("");
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [generatedImage, setGeneratedImage] = useState(null);
+            const [error, setError] = useState(null);
+            const [logs, setLogs] = useState([]);
+            const [autoLoadStatus, setAutoLoadStatus] = useState("checking"); // checking, found, not-found
+
+            const fileInputRef = useRef(null);
+
+            const addLog = (message) => setLogs(prev => [...prev, message]);
+
+            // --- LÓGICA DE CARREGAMENTO AUTOMÁTICO ---
+            useEffect(() => {
+                const loadAfonsoAutomatically = async () => {
+                    addLog("Procurando 'afonso.png' na pasta...");
+                    try {
+                        const response = await fetch(AFONSO_FILE_PATH);
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                setAfonsoImage(reader.result);
+                                setAutoLoadStatus("found");
+                                addLog("Afonso encontrado e carregado automaticamente!");
+                                setActiveTab('create'); // Pula direto para a criação
+                            };
+                            reader.readAsDataURL(blob);
+                        } else {
+                            throw new Error("Arquivo não encontrado");
+                        }
+                    } catch (err) {
+                        setAutoLoadStatus("not-found");
+                        addLog("Afonso não encontrado na pasta. Aguardando upload manual.");
+                    }
+                };
+                
+                loadAfonsoAutomatically();
+            }, []);
+
+            // Função para chamar o Cloudflare Worker
+            const generateCharge = async () => {
+                if (!newsText) { setError("Escreva a notícia."); return; }
+                if (!afonsoImage) { setError("Falta a imagem do Afonso."); setActiveTab('setup'); return; }
+
+                setIsGenerating(true);
+                setError(null);
+                setGeneratedImage(null);
+                addLog("Enviando dados para a IA...");
+
+                const base64Data = afonsoImage.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "");
+
+                const prompt = `
+                    Aja como um cartunista profissional.
+                    Crie uma nova charge/ilustração baseada na imagem fornecida.
+                    
+                    INSTRUÇÃO PRINCIPAL:
+                    Mantenha EXATAMENTE o mesmo personagem da imagem fornecida (o Afonso). 
+                    Preserve suas roupas, cores, traços faciais e estilo de desenho (Nano Banana).
+                    O personagem NÃO deve mudar de aparência, apenas de pose e expressão.
+
+                    CENÁRIO DA CHARGE:
+                    ${newsText}
+
+                    ESTILO:
+                    Fundo simples, traço vetorizado, estilo charge de jornal.
+                `;
+
+                try {
+                    const response = await fetch(WORKER_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: prompt },
+                                    { inlineData: { mimeType: "image/png", data: base64Data } }
+                                ]
+                            }],
+                            generationConfig: { responseModalities: ["IMAGE"] }
+                        })
+                    });
+
+                    if (!response.ok) throw new Error("Erro na comunicação com o servidor.");
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) throw new Error(data.error);
+
+                    const generatedBase64 = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                    if (generatedBase64) {
+                        setGeneratedImage(`data:image/png;base64,${generatedBase64}`);
+                        addLog("Charge criada com sucesso!");
+                        setActiveTab('result');
+                    } else {
+                        throw new Error("A IA não retornou uma imagem.");
+                    }
+
+                } catch (err) {
+                    setError("Erro: " + err.message);
+                    addLog("Falha na geração.");
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            // Handlers manuais
+            const handleManualUpload = (file) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setAfonsoImage(reader.result);
+                    setAutoLoadStatus("manual");
+                    setActiveTab('create');
+                };
+                reader.readAsDataURL(file);
+            };
+
+            return (
+                <div className="flex flex-col min-h-screen text-slate-800 font-sans">
+                    {/* Header */}
+                    <header className="bg-yellow-400 shadow-md p-4 border-b-4 border-yellow-500">
+                        <div className="max-w-3xl mx-auto flex items-center gap-3">
+                            <div className="bg-white p-2 rounded-full border-2 border-black shadow-sm">
+                                <Camera size={24} />
+                            </div>
+                            <h1 className="text-2xl font-black tracking-tight text-black">
+                                ChargeMaker <span className="text-white text-lg font-normal italic bg-black px-2 rounded-md rotate-neg-2 inline-block ml-1">Nano Banana</span>
+                            </h1>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-6 space-y-6">
+                        
+                        {/* Tabs */}
+                        <div className="flex justify-between items-center mb-8 relative z-0">
+                            <div className="absolute left-0 right-0 top-1/2 h-1 bg-gray-200 -z-10"></div>
+                            
+                            <button onClick={() => setActiveTab('setup')} className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 font-bold transition-all ${activeTab === 'setup' ? 'bg-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-100 border-gray-300 text-gray-400'}`}>
+                                1. O Afonso
+                            </button>
+                            <button onClick={() => afonsoImage && setActiveTab('create')} disabled={!afonsoImage} className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 font-bold transition-all ${activeTab === 'create' ? 'bg-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-100 border-gray-300 text-gray-400'}`}>
+                                2. A Notícia
+                            </button>
+                            <button onClick={() => generatedImage && setActiveTab('result')} disabled={!generatedImage} className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 font-bold transition-all ${activeTab === 'result' ? 'bg-white border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-100 border-gray-300 text-gray-400'}`}>
+                                3. Resultado
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded flex items-center gap-3">
+                                <AlertCircle size={20} /> <p>{error}</p>
+                                <button onClick={() => setError(null)} className="ml-auto font-bold">X</button>
+                            </div>
+                        )}
+
+                        {/* TAB 1: SETUP */}
+                        {activeTab === 'setup' && (
+                            <div className="bg-white p-6 rounded-xl border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]">
+                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                    <ImageIcon size={20} /> Quem é o Afonso?
+                                </h2>
+                                
+                                {autoLoadStatus === 'found' || afonsoImage ? (
+                                    <div className="flex flex-col items-center">
+                                        <div className="relative mb-4">
+                                            <img src={afonsoImage} alt="Afonso" className="w-64 h-auto rounded-lg border-2 border-slate-200 shadow-sm" />
+                                            {autoLoadStatus === 'found' && (
+                                                <div className="absolute -top-3 -right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow border border-white flex items-center gap-1">
+                                                    <CheckCircle2 size={12} /> Automático
+                                                </div>
+                                            )}
+                                        </div>
+                                        <p className="text-green-700 font-bold mb-4">Personagem carregado com sucesso!</p>
+                                        <button onClick={() => setActiveTab('create')} className="bg-black text-white font-bold py-3 px-6 rounded-lg hover:bg-slate-800 w-full md:w-auto">
+                                            Tudo certo, ir para Notícia
+                                        </button>
+                                        <button onClick={() => { setAfonsoImage(null); setAutoLoadStatus('manual'); }} className="mt-2 text-sm text-gray-400 hover:text-red-500 underline">
+                                            Remover e enviar outro
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div 
+                                        onClick={() => fileInputRef.current.click()}
+                                        className="border-4 border-dashed border-yellow-300 rounded-xl p-10 text-center hover:bg-yellow-50 cursor-pointer transition-colors"
+                                    >
+                                        <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Upload size={32} className="text-yellow-600" />
+                                        </div>
+                                        <p className="font-medium text-slate-700">
+                                            {autoLoadStatus === 'checking' ? "Procurando 'afonso.png'..." : "Não achei o 'afonso.png'. Clique para fazer upload manual."}
+                                        </p>
+                                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files[0] && handleManualUpload(e.target.files[0])} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* TAB 2: NEWS */}
+                        {activeTab === 'create' && (
+                            <div className="bg-white p-6 rounded-xl border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xl font-bold flex items-center gap-2"><Send size={20} /> A Notícia</h2>
+                                    <button onClick={() => setActiveTab('setup')} className="text-sm text-slate-500 underline">Ver Afonso</button>
+                                </div>
+                                
+                                <textarea
+                                    value={newsText}
+                                    onChange={(e) => setNewsText(e.target.value)}
+                                    placeholder="Ex: O Afonso está reclamando do calor na fila do banco..."
+                                    className="w-full h-40 p-4 text-lg border-2 border-slate-200 rounded-xl focus:border-yellow-500 outline-none resize-none shadow-inner mb-6"
+                                ></textarea>
+
+                                <button 
+                                    onClick={generateCharge}
+                                    disabled={isGenerating || !newsText.trim()}
+                                    className="w-full bg-yellow-400 text-black text-xl font-black py-4 px-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition-all disabled:opacity-50 flex justify-center gap-2"
+                                >
+                                    {isGenerating ? <><Loader2 className="animate-spin" /> Gerando...</> : <><RefreshCw /> GERAR CHARGE</>}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* TAB 3: RESULT */}
+                        {activeTab === 'result' && generatedImage && (
+                            <div className="bg-white p-6 rounded-xl border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)]">
+                                <h2 className="text-2xl font-black text-center mb-6">Resultado</h2>
+                                <img src={generatedImage} className="w-full rounded border-2 border-slate-200 mb-6 bg-slate-50" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => setActiveTab('create')} className="bg-gray-100 font-bold py-3 rounded-lg flex justify-center gap-2 hover:bg-gray-200">
+                                        <RefreshCw size={20} /> Nova
+                                    </button>
+                                    <a href={generatedImage} download="charge.png" className="bg-black text-white font-bold py-3 rounded-lg flex justify-center gap-2 hover:bg-slate-800">
+                                        <Download size={20} /> Baixar
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-8 p-4 bg-white/50 rounded border border-slate-200 text-xs font-mono text-slate-500">
+                            <strong>Log:</strong>
+                            {logs.map((log, i) => <div key={i} className="border-b border-slate-100 py-1">{`> ${log}`}</div>)}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
